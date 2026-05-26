@@ -3,81 +3,95 @@ import fs from 'fs';
 
 test.setTimeout(120000);
 
-test('Scrape QA jobs from Seek NZ', async ({ page }) => {
+test('Scrape ONE QA job from Seek NZ', async ({ page }) => {
 
-  // Open Seek NZ QA jobs page
+  // Open Seek NZ
   await page.goto('https://www.seek.co.nz/qa-jobs');
 
-  // Wait for jobs to load
+  // Wait for jobs
   await page.waitForTimeout(5000);
 
-  // Get all job cards
+  // Get job cards
   const jobs = page.locator('[data-automation="normalJob"]');
 
-  // Count total jobs
+  // Count jobs
   const count = await jobs.count();
+
+  console.log(`Jobs Found: ${count}`);
 
   // Store scraped jobs
   const scrapedJobs = [];
 
-  console.log(`Jobs Found: ${count}`);
+  // ONLY FIRST JOB
+  const job = jobs.nth(0);
 
-  // Loop through job cards
-  for (let i = 0; i < Math.min(count, 10); i++) {
+  try {
 
-    const job = jobs.nth(i);
+    // Extract title
+    const title = await job
+      .locator('[data-automation="jobTitle"]')
+      .textContent({ timeout: 3000 });
 
-    try {
+    // Extract company
+    const company = await job
+      .locator('[data-automation="jobCompany"]')
+      .textContent({ timeout: 3000 })
+      .catch(() => 'N/A');
 
-      // Extract title
-      const title = await job
-        .locator('[data-automation="jobTitle"]')
-        .textContent({ timeout: 3000 });
+    // Extract location
+    const location = await job
+      .locator('[data-automation="jobLocation"]')
+      .textContent({ timeout: 3000 })
+      .catch(() => 'N/A');
 
-      // Extract job link
-      const link = await job
-        .locator('[data-automation="jobTitle"]')
-        .getAttribute('href');
+    // Extract link
+    const link = await job
+      .locator('[data-automation="jobTitle"]')
+      .getAttribute('href');
 
-      // Convert to full URL
-      const fullLink = `https://www.seek.co.nz${link}`;
+    // Full URL
+    const fullLink = `https://www.seek.co.nz${link}`;
 
-      // Extract company safely
-      const company = await job
-        .locator('[data-automation="jobCompany"]')
-        .textContent({ timeout: 3000 })
-        .catch(() => 'N/A');
+    console.log('Opening full job page...');
 
-      // Extract location safely
-      const location = await job
-        .locator('[data-automation="jobLocation"]')
-        .textContent({ timeout: 3000 })
-        .catch(() => 'N/A');
+    // Open job page
+    await page.goto(fullLink);
 
-      // Store job data
-      scrapedJobs.push({
-        title,
-        company,
-        location,
-        link: fullLink
-      });
+    // Wait for JD
+    await page.waitForTimeout(3000);
 
-      // Print extracted data
-      console.log('--------------------');
-      console.log(`Title: ${title}`);
-      console.log(`Company: ${company}`);
-      console.log(`Location: ${location}`);
-      console.log(`Link: ${fullLink}`);
+    // Extract FULL description
+    const description = await page
+      .locator('[data-automation="jobAdDetails"]')
+      .textContent()
+      .catch(() => 'No description found');
 
-    } catch (error) {
+    // Store data
+    scrapedJobs.push({
+      title,
+      company,
+      location,
+      link: fullLink,
+      description
+    });
 
-      console.log(`Skipping broken job card: ${i}`);
+    // Terminal logs
+    console.log('--------------------');
+    console.log(`Title: ${title}`);
+    console.log(`Company: ${company}`);
+    console.log(`Location: ${location}`);
+    console.log(`Link: ${fullLink}`);
 
-    }
+    // ONLY preview in terminal
+    console.log(description?.slice(0, 300));
+
+  } catch (error) {
+
+    console.log('Failed to scrape first job');
 
   }
 
-  // Save jobs to JSON file
+  // Save JSON
   fs.writeFileSync(
     'jobs.json',
     JSON.stringify(scrapedJobs, null, 2)
