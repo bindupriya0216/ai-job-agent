@@ -1,11 +1,24 @@
 {
   "name": "ai-job-agent",
   "version": "1.0.0",
-  "description": "",
+  "description": "Playwright job discovery assistant for scraping and ranking QA job listings.",
   "main": "index.js",
-  "scripts": {},
-  "keywords": [],
-  "author": "",
+  "scripts": {
+    "test": "playwright test",
+    "scrape": "playwright test tests/job-scraper.spec.ts --project=chromium",
+    "scrape:headed": "playwright test tests/job-scraper.spec.ts --project=chromium --headed",
+    "report": "playwright show-report",
+    "install:browsers": "playwright install"
+  },
+  "keywords": [
+    "playwright",
+    "typescript",
+    "qa",
+    "job-search",
+    "automation",
+    "web-scraping"
+  ],
+  "author": "Bindu Priya Karedla",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
